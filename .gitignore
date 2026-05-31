@@ -1,0 +1,13 @@
+.claude/
+.idea/
+out/
+data/JJ/
+*.class
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.zip
+.DS_Store
+Thumbs.db

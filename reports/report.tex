@@ -1,0 +1,408 @@
+\documentclass[6pt,a4paper]{ctexart}
+
+\usepackage{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{caption}
+\usepackage{multirow}
+\usepackage{xcolor}
+
+\geometry{
+  left=2.2cm,
+  right=2.2cm,
+  top=2.1cm,
+  bottom=2.2cm
+}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.35em}
+\linespread{1.15}
+
+\titleformat{\section}
+  {\bfseries\normalsize}
+  {\thesection}
+  {1em}
+  {}
+
+\setlist[itemize]{
+  leftmargin=2em,
+  itemsep=0.25em,
+  topsep=0.2em
+}
+
+\renewcommand{\algorithmicrequire}{\textbf{输入:}}
+\renewcommand{\algorithmicensure}{\textbf{输出:}}
+
+\newcommand{\tb}{\textcolor{red}{\textbf{【待补充】}}}
+
+\begin{document}
+
+\fontsize{9pt}{10pt}\selectfont
+
+% ================= 封面信息 =================
+
+\vspace*{1.0cm}
+
+\begin{center}
+  {\Large \textbf{多种算法求解0/1背包问题的性能比较}}
+\end{center}
+
+\vspace{0.6cm}
+
+\begin{center}
+\begin{tabular}{ccc}
+\cline{1-3}
+学号 & 姓名 & 任务分工 \\
+\cline{1-3}
+3024244487 & 张诗淇 & 回溯算法、分支限界算法、FSU \& Pi \& JJ 实验 \\
+\cline{1-3}
+3024244510 & 贾静潇 & 贪心算法、DP算法、FSU \& Pi \& JJ 实验 \\
+\cline{1-3}
+\end{tabular}
+\end{center}
+
+\vspace{0.4cm}
+
+\begin{center}
+  \textbf{选题类型：}2.3 问题求解类 \quad \textbf{问题：}A.1 背包问题
+\end{center}
+
+\vspace{0.6cm}
+
+% ================= 摘要 =================
+
+\section{摘要}
+
+本实验针对0/1背包问题，实现贪心算法、动态规划、回溯算法和分支限界法四种策略进行求解，在三个数据源上开展实验对比：FSU基准数据集共8个实例，Pi生成数据集覆盖3种模式3种规模共9个实例，JJ大规模数据集选取6个代表性实例。FSU结果表明贪心算法仅1/8实例达到最优解，最差偏离度14.81\%，DP全部命中最优。Pi实验表明不相关数据下贪心接近最优，强相关数据下gap最大达0.85\%。JJ实验进一步验证了DP在$W$=1亿时耗时113秒而贪心仅需毫秒级的巨大差距。回溯与分支限界的实验结果\tb。综合结论：四种算法在时间效率和解质量之间存在显著的折中关系，算法选型需综合考虑数据规模和精度需求。
+
+% ================= 实验目的 =================
+
+\section{实验目的}
+
+\begin{enumerate}[leftmargin=2.5em,itemsep=0.25em]
+  \item 实现贪心、动态规划、回溯、分支限界四种算法，正确求解0/1背包问题。
+  \item 在FSU、Pi、JJ三个数据源共计23个数据集上进行实验，对比四种算法的运行时间与解的质量。
+  \item 分析不同算法策略解决0/1背包问题的复杂度特征与适用场景。
+\end{enumerate}
+
+% ================= 问题定义 =================
+
+\section{0/1背包问题定义}
+
+给定$n$个物品，每个物品$i$具有重量$w_i$和价值$v_i$（$w_i, v_i > 0$），以及一个容量为$W$的背包。求一个物品子集$S \subseteq \{1, 2, \dots, n\}$，使得总重量不超过$W$且总价值最大：
+
+\begin{equation}
+\text{maximize} \sum_{i \in S} v_i \quad \text{s.t.} \sum_{i \in S} w_i \leq W,\quad x_i \in \{0, 1\}
+\end{equation}
+
+0/1背包问题是NP-hard的组合优化问题，具有最优子结构性质，在资源分配、投资决策、货物装载等领域有广泛应用。
+
+% ================= 算法设计 =================
+
+\section{算法设计}
+
+\subsection{贪心算法}
+
+\textbf{策略：}计算每个物品的性价比 $r_i = v_i / w_i$，按$r_i$降序排列，依次尝试将物品装入背包，若剩余容量充足则放入，否则跳过。
+
+\begin{algorithm}[ht]
+\caption{贪心算法求解0/1背包}
+\begin{algorithmic}[1]
+\Require 重量数组 $w[1..n]$，价值数组 $v[1..n]$，容量 $W$
+\Ensure 总价值 $V$，选中物品集合 $S$
+\State 计算 $r_i \gets v_i / w_i$，按 $r_i$ 降序排序物品
+\State $V \gets 0$, $curW \gets 0$
+\For{$i \gets 1$ \textbf{to} $n$}
+    \If{$curW + w[i] \leq W$}
+        \State $V \gets V + v[i]$, $curW \gets curW + w[i]$, $S \gets S \cup \{i\}$
+    \EndIf
+\EndFor
+\State \Return $V, S$
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{复杂度分析：}排序$O(n \log n)$，遍历$O(n)$，总时间复杂度$O(n \log n)$，空间复杂度$O(n)$。贪心算法不保证最优解，最坏情况下近似比无上界。
+
+\textbf{失效原因：}贪心优先选取高性价比物品，但在剩余容量小于某物品重量时会直接跳过，无法回头替换之前的低性价比选择。强相关数据下所有物品性价比接近，排序区分度差，此时偏差最大。
+
+\subsection{动态规划}
+
+\textbf{状态定义：}$dp[w]$表示容量为$w$时能获得的最大价值。
+
+\textbf{状态转移方程：}
+\begin{equation}
+dp[w] = \max\{\,dp[w],\; dp[w - w_i] + v_i\,\}
+\end{equation}
+
+\begin{algorithm}[ht]
+\caption{动态规划求解0/1背包}
+\begin{algorithmic}[1]
+\Require 重量数组 $w[1..n]$，价值数组 $v[1..n]$，容量 $W$
+\Ensure 最优总价值 $dp[W]$
+\State 初始化 $dp[0..W] \gets 0$
+\For{$i \gets 1$ \textbf{to} $n$}
+    \For{$c \gets W$ \textbf{downto} $w[i]$}
+        \State $take \gets dp[c - w[i]] + v[i]$
+        \If{$take > dp[c]$}
+            \State $dp[c] \gets take$
+        \EndIf
+    \EndFor
+\EndFor
+\State \Return $dp[W]$
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{关键细节：}内层循环必须从$W$递减至$w_i$。若正序，$dp[c - w_i]$可能已被本轮更新过，导致同一物品被多次选取，退化为完全背包问题。
+
+\textbf{复杂度分析：}时间复杂度$O(nW)$，空间复杂度$O(W)$。$O(nW)$为伪多项式复杂度——当$W$以数值而非$\log W$增长时，运行时间按线性膨胀。例如$n=2000$、$W \approx 250$万时内层循环约50亿次；$W$=100亿时DP所需内存约40GB，已超出常规硬件极限。
+
+\subsection{回溯算法}
+
+\tb
+
+\subsection{分支限界算法}
+
+\tb
+
+% ================= 数据集说明 =================
+
+\section{数据集说明}
+
+\subsection{FSU基准数据集}
+
+Florida State University提供的8个0/1背包测试实例，每个实例包含4个文件：\_c.txt（容量）、\_w.txt（重量）、\_p.txt（价值）、\_s.txt（最优选择方案）。
+
+\begin{table}[ht]
+\centering
+\caption{FSU数据集基本信息}
+\begin{tabular}{cccc}
+\toprule
+实例 & $n$ & $W$ & 最优值 \\
+\midrule
+P01 & 10 & 165 & 309 \\
+P02 & 5 & 26 & 51 \\
+P03 & 6 & 190 & 150 \\
+P04 & 7 & 50 & 107 \\
+P05 & 8 & 104 & 900 \\
+P06 & 7 & 170 & 1735 \\
+P07 & 15 & 750 & 1458 \\
+P08 & 24 & 6,404,180 & 13,549,094 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Pi风格生成数据集}
+
+参考Pisinger的测试实例生成方法论，设计了3种模式×3种规模共9个生成实例。三种模式控制重量与价值的相关性：不相关数据中$w$和$v$独立均匀随机，弱相关数据满足$v = w \pm \delta$，强相关数据满足$v = w + k$。容量设为物品总重量的50\%，固定随机种子以保证可复现。
+
+\begin{table}[ht]
+\centering
+\caption{Pi生成数据集}
+\begin{tabular}{ccccc}
+\toprule
+模式 & 实例 & $n$ & $W$（约） & 特征 \\
+\midrule
+\multirow{3}{*}{不相关} & UNCORR\_S & 50 & 1.2万 & $w, v$独立均匀随机 \\
+& UNCORR\_M & 500 & 60万 & 同上 \\
+& UNCORR\_L & 2000 & 247万 & 同上 \\
+\midrule
+\multirow{3}{*}{弱相关} & WEAK\_S & 50 & 1.2万 & $v \in [w-\delta, w+\delta]$ \\
+& WEAK\_M & 500 & 62万 & 同上 \\
+& WEAK\_L & 2000 & 255万 & 同上 \\
+\midrule
+\multirow{3}{*}{强相关} & STRONG\_S & 50 & 1.3万 & $v = w + W/10$ \\
+& STRONG\_M & 500 & 62万 & 同上 \\
+& STRONG\_L & 2000 & 249万 & 同上 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{JJ大规模数据集}
+
+JorikJooken提供的3240个测试实例中选取6个代表性实例。每个实例存放在独立子目录中，子目录名为$n\_\{n\}\_c\_\{c\}\_g\_\{g\}\_f\_\{f\}\_eps\_\{eps\}\_s\_\{seed\}$格式，含一个\texttt{test.in}文件。\texttt{test.in}格式为：首行物品数$n$，随后$n$行每行三个整数——物品ID、利润profit、重量weight，末行为背包容量$c$。最优值由仓库附带的\texttt{optima.csv}提供。
+
+参数含义：$n$为物品数，$c$为容量，$g$为分组数，$f$为利润--重量相关系数（0.1--0.3，越大相关性越强），$eps$为噪声水平，$s$为随机种子。选取$g$=10、$eps$=0、$s$=100的基准配置，覆盖2种规模×3种$f$值共6个实例。该数据集中$c$=1亿和$c$=100亿的实例因DP内存需求过大及运行时间过长，仅选$c$=100万的实例进行完整对比。
+
+\begin{table}[ht]
+\centering
+\caption{JJ数据集（选取6个实例）}
+\begin{tabular}{ccccc}
+\toprule
+实例简称 & $n$ & $W$ & $f$ & profit/weight特征 \\
+\midrule
+n=400,c=1M,f=0.1 & 400 & 100万 & 0.1 & 弱相关 \\
+n=400,c=1M,f=0.2 & 400 & 100万 & 0.2 & 中等相关 \\
+n=400,c=1M,f=0.3 & 400 & 100万 & 0.3 & 较强相关 \\
+n=1000,c=1M,f=0.1 & 1000 & 100万 & 0.1 & 弱相关 \\
+n=1000,c=1M,f=0.2 & 1000 & 100万 & 0.2 & 中等相关 \\
+n=1000,c=1M,f=0.3 & 1000 & 100万 & 0.3 & 较强相关 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ================= 实验结果 =================
+
+\section{实验结果与分析}
+
+\subsection{FSU数据集结果}
+
+\begin{table}[ht]
+\centering
+\caption{FSU：四种算法结果对比}
+\begin{tabular}{cccccccc}
+\toprule
+实例 & $n$ & 贪心值 & DP值 & 回溯值 & 分支限界值 & 最优值 & 贪心Gap(\%) \\
+\midrule
+P01 & 10 & 309 & 309 & \tb & \tb & 309 & 0.00 \\
+P02 & 5 & 47 & 51 & \tb & \tb & 51 & 7.84 \\
+P03 & 6 & 146 & 150 & \tb & \tb & 150 & 2.67 \\
+P04 & 7 & 102 & 107 & \tb & \tb & 107 & 4.67 \\
+P05 & 8 & 858 & 900 & \tb & \tb & 900 & 4.67 \\
+P06 & 7 & 1478 & 1735 & \tb & \tb & 1735 & 14.81 \\
+P07 & 15 & 1441 & 1458 & \tb & \tb & 1458 & 1.17 \\
+P08 & 24 & 13415886 & 13549094 & \tb & \tb & 13549094 & 0.98 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{FSU：四种算法耗时对比（ms）}
+\begin{tabular}{ccccc}
+\toprule
+实例 & 贪心 & DP & 回溯 & 分支限界 \\
+\midrule
+P01 & 879.97 & 280.03 & \tb & \tb \\
+P02 & 0.06 & 0.03 & \tb & \tb \\
+P03 & 0.11 & 0.40 & \tb & \tb \\
+P04 & 0.04 & 0.09 & \tb & \tb \\
+P05 & 0.41 & 0.08 & \tb & \tb \\
+P06 & 0.06 & 0.22 & \tb & \tb \\
+P07 & 0.57 & 0.96 & \tb & \tb \\
+P08 & 0.12 & 1589.24 & \tb & \tb \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{分析：}DP在所有8个实例上命中官方最优解，贪心仅P01达到最优，最差gap为14.81\%。P08虽然$n$仅24，但容量达640万，DP耗时1.59s，体现了$O(nW)$伪多项式性质；贪心始终在毫秒级。P01耗时异常为JVM预热效应。回溯与分支限界的表现\tb。
+
+\subsection{Pi生成数据集结果}
+
+\begin{table}[ht]
+\centering
+\caption{Pi：四种算法结果对比}
+\begin{tabular}{ccccccc}
+\toprule
+实例 & $n$ & 贪心值 & DP值 & 回溯值 & 分支限界值 & 贪心Gap(\%) \\
+\midrule
+UNCORR\_S & 50 & 19976 & 19976 & \tb & \tb & 0.00 \\
+UNCORR\_M & 500 & 1001047 & 1001186 & \tb & \tb & 0.01 \\
+UNCORR\_L & 2000 & 4111121 & 4111268 & \tb & \tb & 0.00 \\
+WEAK\_S & 50 & 13822 & 13822 & \tb & \tb & 0.00 \\
+WEAK\_M & 500 & 703546 & 703810 & \tb & \tb & 0.04 \\
+WEAK\_L & 2000 & 2866292 & 2866401 & \tb & \tb & 0.00 \\
+STRONG\_S & 50 & 16297 & 16437 & \tb & \tb & 0.85 \\
+STRONG\_M & 500 & 800642 & 801635 & \tb & \tb & 0.12 \\
+STRONG\_L & 2000 & 3199654 & 3200355 & \tb & \tb & 0.02 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{Pi：四种算法耗时对比（ms）}
+\begin{tabular}{ccccc}
+\toprule
+实例 & 贪心 & DP & 回溯 & 分支限界 \\
+\midrule
+UNCORR\_S & 9.69 & 10.18 & \tb & \tb \\
+UNCORR\_M & 1.57 & 760.54 & \tb & \tb \\
+UNCORR\_L & 3.64 & 9859.19 & \tb & \tb \\
+WEAK\_S & 0.11 & 0.99 & \tb & \tb \\
+WEAK\_M & 1.09 & 566.29 & \tb & \tb \\
+WEAK\_L & 3.14 & 9069.08 & \tb & \tb \\
+STRONG\_S & 0.13 & 2.10 & \tb & \tb \\
+STRONG\_M & 0.69 & 527.93 & \tb & \tb \\
+STRONG\_L & 2.42 & 8244.92 & \tb & \tb \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{分析：}不相关数据下贪心gap接近0\%，因物品性价比差异大，排序策略有效区分优劣；弱相关gap略升至0.04\%；强相关S级gap达0.85\%，此时所有物品性价比差异极小，排序对贪心几乎无帮助。DP耗时从S到L增长约三个数量级，与$n \times W$的增长幅度一致；贪心耗时始终在毫秒级。$W \approx 250$万时DP各L级实例耗时8--10s，已接近可接受的实时性能上限。回溯与分支限界在三种模式下的表现\tb。
+
+\subsection{JJ大规模数据集结果}
+
+\begin{table}[ht]
+\centering
+\caption{JJ：四种算法结果对比}
+\begin{tabular}{ccccccc}
+\toprule
+实例 & $n$ & 贪心值 & DP值 & 回溯值 & 分支限界值 & 贪心Gap(\%) \\
+\midrule
+n=400,f=0.1 & 400 & 1003879 & 1003939 & \tb & \tb & 0.01 \\
+n=400,f=0.2 & 400 & 1004227 & 1004245 & \tb & \tb & 0.00 \\
+n=400,f=0.3 & 400 & 1004587 & 1005007 & \tb & \tb & 0.04 \\
+n=1000,f=0.1 & 1000 & 1007973 & 1008317 & \tb & \tb & 0.03 \\
+n=1000,f=0.2 & 1000 & 1008470 & 1008509 & \tb & \tb & 0.00 \\
+n=1000,f=0.3 & 1000 & 1010292 & 1010297 & \tb & \tb & 0.00 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\centering
+\caption{JJ：四种算法耗时对比（ms）}
+\begin{tabular}{ccccc}
+\toprule
+实例 & 贪心 & DP & 回溯 & 分支限界 \\
+\midrule
+n=400,f=0.1 & 51.67 & 1128 & \tb & \tb \\
+n=400,f=0.2 & 0.65 & 868 & \tb & \tb \\
+n=400,f=0.3 & 0.50 & 756 & \tb & \tb \\
+n=1000,f=0.1 & 1.65 & 1826 & \tb & \tb \\
+n=1000,f=0.2 & 1.64 & 1793 & \tb & \tb \\
+n=1000,f=0.3 & 1.41 & 1783 & \tb & \tb \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{分析：}JJ数据集结果与Pi保持一致：贪心gap全部在0.05\%以内，DP耗时随$n$增长而增加，贪心始终毫秒级完成。该数据集的核心价值在于极限测试——$c$=1亿时DP实测耗时113秒而贪心仅需$<$1ms，$c$=100亿时容量超出Java int表示范围导致DP直接不可用，直观展示了伪多项式复杂度在现实硬件上的硬性限制。回溯与分支限界的表现\tb，尤其在大容量实例上的可行性\tb。
+
+% ================= 复杂度对比 =================
+
+\section{四种算法复杂度对比}
+
+\begin{table}[ht]
+\centering
+\caption{四种算法全面对比}
+\begin{tabular}{p{2.5cm}p{2.8cm}p{2.8cm}p{2.8cm}p{2.8cm}}
+\toprule
+维度 & 贪心 & 动态规划 & 回溯 & 分支限界 \\
+\midrule
+时间复杂度 & $O(n \log n)$ & $O(nW)$ & \tb & \tb \\
+空间复杂度 & $O(n)$ & $O(W)$ & \tb & \tb \\
+是否保证最优解 & 否 & 是 & \tb & \tb \\
+对$W$的敏感度 & 不敏感 & 高度敏感 & \tb & \tb \\
+对数据分布的敏感度 & 高 & 低 & \tb & \tb \\
+大容量可行性 & 百万级物品可秒出 & $W>10^8$极慢，$W>10^{10}$时OOM & \tb & \tb \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ================= 总结 =================
+
+\section{总结}
+
+本实验实现了贪心、动态规划、回溯和分支限界四种算法，在FSU、Pi、JJ三个数据源共计23个数据集上对0/1背包问题进行求解对比。实验结果表明：动态规划始终得到最优解，但$O(nW)$伪多项式复杂度使其在大容量场景下性能显著下降——$W \approx 250$万时耗时约10s，$W$=100亿时直接OOM；贪心算法在所有数据集上均以毫秒级完成，但不保证最优，gap在0\%至14.81\%之间浮动，与物品重量--价值的相关性强弱密切相关。回溯与分支限界方面\tb。
+
+综合而言，四种算法在时间效率与解最优性之间存在清晰的折中谱系：一端是极快但不保证最优的贪心，另一端是保证最优但受限于$W$的DP。实际应用中需根据数据规模、容量大小和精度要求选择合适的算法策略。
+
+\end{document}

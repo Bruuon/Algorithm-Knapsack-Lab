@@ -1,0 +1,142 @@
+\documentclass[6pt,a4paper]{ctexart}
+
+
+
+\usepackage{geometry}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+\geometry{
+  left=2.2cm,
+  right=2.2cm,
+  top=2.1cm,
+  bottom=2.2cm
+}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.35em}
+\linespread{1.15}
+
+\titleformat{\section}
+  {\bfseries\normalsize}
+  {\thesection}
+  {1em}
+  {}
+
+\setlist[itemize]{
+  leftmargin=2em,
+  itemsep=0.25em,
+  topsep=0.2em
+}
+
+\begin{document}
+
+\fontsize{9pt}{10pt}\selectfont
+
+% ================= 第 1 页 =================
+
+\vspace*{1.3cm}
+
+\begin{center}
+  {\Large 《算法分析与设计》上机实验计划书}
+\end{center}
+
+\vspace{1.3cm}
+
+\begin{center}
+\begin{tabular}{ccc}
+\cline{1-3}
+学号 & 姓名 & 任务分工 \\
+\cline{1-3}
+（请填写） & （请填写） & （请填写） \\
+\cline{1-3}
+\end{tabular}
+\end{center}
+
+\section{背景与问题定义（150--200 字）}
+
+0/1背包问题是组合优化中的经典问题：给定$n$个物品，每个物品$i$具有重量$w_i$和价值$v_i$，背包容量为$W$，要求在总重量不超过$W$的前提下选择物品子集，使总价值最大。该问题是NP-hard的，在实际中有广泛应用，如资源分配、投资决策、货物装载等。由于0/1背包问题具有最优子结构性质，贪心、动态规划、回溯及分支限界等多种算法策略均可用于求解，但它们的设计原理、时间复杂度和解的精确性存在本质差异，适合进行多算法对比分析。
+
+\section{选题动机与意义（200--300 字）}
+
+0/1背包问题是算法教学中的经典案例，但课堂上通常侧重于单一算法的理论分析，缺乏系统性多算法对比的实验验证。本实验选择0/1背包问题，利用至少三种不同策略的算法（如贪心、动态规划、回溯、分支限界）在同一数据集上进行求解对比，旨在揭示以下问题：(1)~贪心策略无法保证最优解，但其效率极高，在特定数据分布下近似比如何；(2)~动态规划可在伪多项式时间内求得精确解，但其空间复杂度受容量$W$制约；(3)~回溯和分支限界通过搜索+剪枝求解，在不同数据特征下剪枝效率差异显著。通过多算法对比实验，能够直观展示时间效率与解最优性之间的折中关系，加深对算法设计本质的理解，并为实际工程中的算法选型提供参考依据。
+
+\section{预期目标}
+
+\begin{enumerate}[leftmargin=2.5em,itemsep=0.25em]
+  \item 实现贪心、动态规划、回溯（或分支限界）中至少三种算法，正确求解0/1背包问题。
+  \item 在至少3个不同规模与分布的数据集上运行各算法，对比运行时间、空间占用及解的质量。
+  \item 分析实验结果，归纳不同算法解决0/1背包问题的优缺点与适用场景，完成实验报告。
+\end{enumerate}
+
+\section{进度计划（重要检查点）}
+
+\begin{tabular}{p{2.3cm}p{7.4cm}p{4.2cm}}
+\toprule
+周次 & 计划内容 & 预期产出 \\
+\midrule
+第 1 周 & 查阅0/1背包问题相关文献，确定算法方案与数据集 & 计划任务书 \\
+第 2 周 & 核心算法（贪心、DP、回溯/分支限界）编码与调试 & 可运行程序、初步测试结果 \\
+第 3 周 & 多数据集实验、性能对比与结果分析 & 实验数据图表、分析结论 \\
+第 4 周 & 撰写实验报告、制作PPT、录制讲解视频 & 报告终稿、PPT、视频 \\
+\bottomrule
+\end{tabular}
+% ================= 第 2 页 =================
+
+\setcounter{section}{4}
+
+\section{可能遇到的困难及解决策略}
+
+\begin{tabular}{p{7.1cm}p{7.1cm}}
+\toprule
+可能困难 & 解决策略 \\
+\midrule
+大数据集下动态规划空间占用过大（$O(nW)$）
+&
+采用滚动数组优化至$O(W)$，或对大规模$W$改用回溯/分支限界
+\\
+回溯/分支限界在某些数据集上搜索空间过大导致超时
+&
+设计紧致的上界估计函数（如Dantzig bound），优先搜索高价值节点
+\\
+不同数据源格式不一致，难以批量处理
+&
+编写统一的数据预处理脚本，规范化为标准格式后批量实验
+\\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8cm}
+
+\section{参考资料（可选）}
+
+\noindent
+{[1]}~Kellerer H, Pferschy U, Pisinger D. \textit{Knapsack Problems}. Springer, 2004.
+
+\noindent
+{[2]}~Jooken J, Leyman P, De Causmaecker P. Features for the 0-1 knapsack problem based on inclusionwise maximal solutions. arXiv:2211.09665, 2022.
+
+\noindent
+{[3]}~Pisinger D. Where are the hard knapsack problems? \textit{Computers \& Operations Research}, 2005, 32(9): 2271--2284.
+
+\vspace{0.8cm}
+
+\noindent
+说明：
+
+\begin{enumerate}[leftmargin=2.5em,itemsep=0.25em]
+  \item 本计划书对应选题类型为\textbf{2.3 问题求解类}，具体问题为附件1中的\textbf{A.1 背包问题}。
+  \item 建议保存为 \textbf{PDF} 后提交，文件命名方式：
+
+  \qquad \textbf{T2.3--M?--Proposal.pdf}
+
+  \qquad 其中 \textbf{T2.3} 表示第2.3类任务，\textbf{M?} 表示成员数。
+  \item 每个小组提交 1 份。
+\end{enumerate}
+
+\end{document}
