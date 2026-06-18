@@ -60,7 +60,7 @@
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{backgrounds,calc}
+\usetikzlibrary{backgrounds,calc,positioning}
 
 % ====== pgfplots 全局 ======
 \pgfplotsset{
@@ -191,8 +191,8 @@
 \midrule
 \hi{贪心}      & 性价比排序，依次塞入   & $O(n\log n)$  & \hi{否} \\
 \blu{动态规划} & 自底向上递推填表       & $O(nW)$       & 是 \\
-回溯          & 深搜 + 上界剪枝       & \tb           & \tb \\
-分支限界      & 优先队列 + 上下界     & \tb           & \tb \\
+回溯          & 深搜 + 上界剪枝       & 最坏 $O(2^n)$ & 是 \\
+分支限界      & 优先队列 + 上界剪枝   & 最坏 $O(2^n)$ & 是 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -276,8 +276,8 @@ $dp[w]$ = 容量 $w$ 时的最大价值
 
 \vspace{0.12cm}
 {\footnotesize\color{slate}
-$n$=2000, $W$=250万：$\sim$50亿次迭代 → 10s \\
-$W$=100亿：dp数组$\sim$40GB → \hi{OOM}
+$n$=2000, $W\approx250$万：数十亿次状态转移 → 约10s \\
+$W$继续放大时：dp数组线性膨胀 → 内存压力明显
 }
 \end{leftblock}
 \end{column}
@@ -295,35 +295,49 @@ $W$=100亿：dp数组$\sim$40GB → \hi{OOM}
 
 \begin{columns}[T]
 \begin{column}{0.5\textwidth}
-\begin{leftblock}{回溯}
-深度优先搜索解空间树
+\begin{leftblock}{回溯 Backtracking}
+深度优先遍历“选/不选”解空间树
 
 \vspace{0.08cm}
 {\footnotesize\color{slate}
-剪枝条件：剩余容量 + 价值上界 \\
-最坏 $O(2^n)$，$n$ 大时不可行
+可行性剪枝：超重立即返回 \\
+上界剪枝：当前价值 + 剩余上界 $\leq$ 最优值则停止
 }
 \end{leftblock}
+
+\vspace{0.05cm}
+{\footnotesize\color{slate}
+\textbf{复杂度：}最坏 $O(2^n)$，空间 $O(n)$。\\
+\textbf{适合：}小规模精确求解、验证最优值。
+}
 \end{column}
 \begin{column}{0.5\textwidth}
-\begin{leftblock}{分支限界}
-优先队列驱动搜索
+\begin{leftblock}{分支限界 Branch \\ Bound}
+优先队列维护活节点，优先扩展上界最高的节点
 
 \vspace{0.08cm}
 {\footnotesize\color{slate}
-上界+下界联合剪枝 \\
-优先扩展最有希望的节点
+用分数背包思想估计上界 \\
+上界不足的节点直接丢弃
 }
 \end{leftblock}
+
+\vspace{0.05cm}
+{\footnotesize\color{slate}
+\textbf{复杂度：}最坏 $O(2^n)$，空间最坏 $O(2^n)$。\\
+\textbf{适合：}剪枝有效的小/中规模精确搜索。
+}
 \end{column}
 \end{columns}
 
-\vspace{0.3cm}
+\vspace{0.25cm}
 \begin{center}
-{\large\color{slate}\tb}
-
-\vspace{0.15cm}
-{\tiny\color{rule}（策略描述、复杂度分析、实验结果待张诗淇补充）}
+\begin{tikzpicture}[font=\footnotesize]
+  \node[draw=rule,fill=soft,text width=8.3cm,align=center,rounded corners=3pt,inner sep=5pt] {
+    {\color{ink}\textbf{实验处理：}}FSU 与 Pi-S 完整运行；Pi-M/Pi-L 与 JJ 因 $n$ 过大记录为 \hi{SKIP}。\\[0.04cm]
+    {\color{slate}\scriptsize 这不是代码缺失，而是指数级搜索在大规模输入下的实际限制。}
+  };
+\end{tikzpicture}
 \end{center}
 
 \end{frame}
@@ -341,7 +355,7 @@ $W$=100亿：dp数组$\sim$40GB → \hi{OOM}
 \midrule
 \hi{FSU}  & Florida State U. & 官方基准，$n$=5--24，附最优解对照 & 8 \\
 \blu{Pi}  & 自生成(Pisinger) & 3种相关性 $\times$ 3种规模，固定种子 & 9 \\
-\hi{JJ}  & JorikJooken (GH) & 学术标准集，$n$=400--1000，$W$至100亿 & 6 \\
+\hi{JJ}  & JorikJooken (GH) & 学术标准集，$n$=400--1000，$W$=100万 & 6 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -359,138 +373,262 @@ $W$=100亿：dp数组$\sim$40GB → \hi{OOM}
 
 \end{frame}
 
-% ====== Slide 8: FSU 结果 ======
-\begin{frame}{FSU 实验结果}
 
-\vspace{-0.25cm}
+% ====== Slide 8: FSU 四算法同表对比 ======
+\begin{frame}{FSU：四种算法同表比较}
+
+\vspace{-0.18cm}
+\begin{table}
+\renewcommand{\arraystretch}{1.28}
+\footnotesize
+\begin{tabular}{p{1.15cm}r rrrr r}
+\toprule
+\textbf{实例} & \textbf{贪心} & \textbf{DP} & \textbf{回溯} & \textbf{分支限界} & \textbf{最优值} & \textbf{贪心Gap} \\
+\midrule
+P01 & 309 & 309 & 309 & 309 & 309 & 0.00\% \\
+P06 & \hi{1478} & \blu{1735} & \blu{1735} & \blu{1735} & 1735 & \hi{14.81\%} \\
+P08 & \hi{13415886} & \blu{13549094} & \blu{13549094} & \blu{13549094} & 13549094 & 0.98\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.15cm}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{leftblock}{同一张表看四种算法}
+{\footnotesize\color{slate}
+FSU 数据规模小，四种算法都可运行。DP、回溯、分支限界全部命中最优，贪心在 P06 出现明显偏差。}
+\end{leftblock}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{leftblock}{分析重点}
+{\footnotesize\color{slate}
+P06 说明“性价比排序”不等于全局最优；P08 则体现容量 $W$ 对 DP 的影响。}
+\end{leftblock}
+\end{column}
+\end{columns}
+
+\vspace{0.1cm}
 \begin{center}
+{\footnotesize\color{ink}\textbf{结论：}小规模场景下，搜索类算法能作为 DP 的精确验证；贪心只能作为快速基线。}
+\end{center}
+
+\end{frame}
+
+% ====== Slide 9: FSU 四算法耗时 ======
+\begin{frame}{FSU：四种算法耗时比较}
+
+\vspace{-0.28cm}
+\begin{center}
+{\small\color{ink}\textbf{代表实例耗时对比（log 坐标，ms）}}
 \begin{tikzpicture}
 \begin{axis}[
-  barplot, height=3.8cm, width=0.9\textwidth,
-  ylabel={总价值},
-  symbolic x coords={P01,P02,P03,P04,P05,P06,P07,P08},
+  ybar, width=0.94\textwidth, height=4.55cm,
+  ymode=log, log basis y={10},
+  grid=major, bar width=6pt, enlarge x limits=0.22,
+  ylabel={耗时(ms)},
+  symbolic x coords={P06,P08},
   xtick=data,
-  x tick label style={font=\fontsize{4}{4.5}\selectfont},
-  legend style={font=\fontsize{4}{4.5}\selectfont,at={(0.98,0.98)},anchor=north east},
+  ymin=0.01,
+  legend style={font=\fontsize{5}{5.5}\selectfont,at={(0.5,-0.22)},anchor=north,legend columns=4,draw=none,fill=none},
+  x tick label style={font=\fontsize{6}{6.5}\selectfont},
 ]
-  \addplot[fill=ember!80,draw=ember] coordinates {
-    (P01,309)(P02,47)(P03,146)(P04,102)(P05,858)(P06,1478)(P07,1441)(P08,13415886)
-  };
-  \addplot[fill=accent!80,draw=accent] coordinates {
-    (P01,309)(P02,51)(P03,150)(P04,107)(P05,900)(P06,1735)(P07,1458)(P08,13549094)
-  };
-  \legend{贪心, DP/最优}
+  \addplot[fill=accent!75,draw=accent] coordinates {(P06,0.069)(P08,757.697)};
+  \addlegendentry{DP}
+  \addplot[fill=ember!75,draw=ember] coordinates {(P06,0.161)(P08,0.081)};
+  \addlegendentry{贪心}
+  \addplot[fill=slate!65,draw=slate] coordinates {(P06,0.070)(P08,0.306)};
+  \addlegendentry{回溯}
+  \addplot[fill=ink!70,draw=ink] coordinates {(P06,0.271)(P08,1.378)};
+  \addlegendentry{分支限界}
 \end{axis}
 \end{tikzpicture}
 \end{center}
 
-\vspace{-0.15cm}
+\vspace{0.08cm}
 \begin{itemize}
-  \item \blu{DP 全 8 例命中最优} · 贪心仅 P01 达最优 · 最差 gap \hi{14.81\%}（P06）
-  \item P08: $n$=24, $W$=640万，DP 1.59s，贪心 $<$0.2ms → \hi{万倍速差}
+  \item P08 的 $n=24$，但 $W=6,404,180$，DP 需要枚举容量状态，因此耗时显著增加。
+  \item 回溯/分支限界主要受 $n$ 和剪枝效果影响，\hi{不直接按 $W$ 扩张}，所以在 P08 仍可运行。
 \end{itemize}
 
 \end{frame}
 
-% ====== Slide 9: Pi 结果 ======
-\begin{frame}{Pi 实验结果}
+% ====== Slide 10: Pi-S 四算法比较 ======
+\begin{frame}{Pi-S：四种算法完整比较}
 
-\vspace{-0.25cm}
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-{\small\color{ink}\textbf{DP 耗时趋势（对数）}}\\[0.05cm]
+\vspace{-0.28cm}
+\begin{center}
+{\small\color{ink}\textbf{S规模三类数据耗时对比（log 坐标，ms）}}
 \begin{tikzpicture}
 \begin{axis}[
-  narrowline, height=3.0cm,
+  ybar, width=0.94\textwidth, height=4.55cm,
   ymode=log, log basis y={10},
-  xlabel={}, ylabel={耗时(ms)},
-  xtick={0,1,2}, xticklabels={S(50),M(500),L(2000)},
-  cycle list={{accent,mark=*},{ember,mark=*},{ink,mark=*}},
+  grid=major, bar width=5pt, enlarge x limits=0.17,
+  ylabel={耗时(ms)},
+  symbolic x coords={不相关S,弱相关S,强相关S},
+  xtick=data,
+  ymin=0.05,
+  legend style={font=\fontsize{5}{5.5}\selectfont,at={(0.5,-0.22)},anchor=north,legend columns=4,draw=none,fill=none},
+  x tick label style={font=\fontsize{5.5}{6}\selectfont},
 ]
-  \addplot coordinates {(0,10.18)(1,760.54)(2,9859.19)};
-  \addlegendentry{不相关}
-  \addplot coordinates {(0,0.99)(1,566.29)(2,9069.08)};
-  \addlegendentry{弱相关}
-  \addplot coordinates {(0,2.10)(1,527.93)(2,8244.92)};
-  \addlegendentry{强相关}
+  \addplot[fill=accent!75,draw=accent] coordinates {(不相关S,16.967)(弱相关S,3.882)(强相关S,1.558)};
+  \addlegendentry{DP}
+  \addplot[fill=ember!75,draw=ember] coordinates {(不相关S,23.471)(弱相关S,0.173)(强相关S,0.083)};
+  \addlegendentry{贪心}
+  \addplot[fill=slate!65,draw=slate] coordinates {(不相关S,23.391)(弱相关S,0.689)(强相关S,0.218)};
+  \addlegendentry{回溯}
+  \addplot[fill=ink!70,draw=ink] coordinates {(不相关S,34.255)(弱相关S,1.092)(强相关S,1.549)};
+  \addlegendentry{分支限界}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.05cm}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+{\footnotesize\color{slate}S规模 $n=50$：四种算法全部 \blu{OK}，DP、回溯、分支限界均命中最优。}
+\end{column}
+\begin{column}{0.45\textwidth}
+{\footnotesize\color{slate}M/L规模 $n=500/2000$：搜索空间过大，回溯和分支限界记录为 \hi{SKIP}。}
+\end{column}
+\end{columns}
+
+\end{frame}
+
+% ====== Slide 11: 搜索类算法状态矩阵 ======
+\begin{frame}{搜索类算法：从可运行到不可运行}
+
+\vspace{-0.15cm}
+\begin{center}
+\renewcommand{\arraystretch}{1.35}
+\small
+\begin{tabular}{p{2.2cm}p{1.5cm}p{1.8cm}p{1.8cm}p{2.35cm}}
+\toprule
+\textbf{数据组} & \textbf{$n$} & \textbf{回溯} & \textbf{分支限界} & \textbf{说明} \\
+\midrule
+FSU & 5--24 & \blu{OK} & \blu{OK} & 全部命中最优 \\
+Pi-S & 50 & \blu{OK} & \blu{OK} & 小规模完整比较 \\
+Pi-M/L & 500/2000 & \hi{SKIP} & \hi{SKIP} & 指数搜索空间过大 \\
+JJ & 400/1000 & \hi{SKIP} & \hi{SKIP} & 大规模实例不可完整搜索 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{0.25cm}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\begin{leftblock}{回溯}
+{\footnotesize\color{slate}递归深度约 $O(n)$，内存压力较低；但节点数最坏 $2^n$，规模扩大后迅速失控。}
+\end{leftblock}
+\end{column}
+\begin{column}{0.48\textwidth}
+\begin{leftblock}{分支限界}
+{\footnotesize\color{slate}优先队列让搜索更有方向；但活节点过多时，空间最坏也可能接近指数级。}
+\end{leftblock}
+\end{column}
+\end{columns}
+
+\vspace{0.08cm}
+\begin{center}
+{\small\color{ink}\textbf{结论：搜索类算法保证最优，但“保证最优”不等于“大规模可运行”。}}
+\end{center}
+
+\end{frame}
+
+% ====== Slide 12: Pi 结果 ======
+\begin{frame}{Pi：规模扩展与贪心偏差}
+
+\vspace{-0.28cm}
+\begin{columns}[T]
+\begin{column}{0.49\textwidth}
+{\small\color{ink}\textbf{DP 耗时趋势（log）}}\\[-0.03cm]
+\begin{tikzpicture}
+\begin{axis}[
+  width=\columnwidth, height=3.25cm,
+  ymode=log, log basis y={10},
+  grid=major, mark=*, mark size=1pt, line width=0.7pt,
+  ylabel={耗时(ms)},
+  xtick={0,1,2}, xticklabels={S,M,L},
+  legend style={font=\fontsize{4.3}{4.8}\selectfont,at={(0.5,-0.25)},anchor=north,legend columns=3,draw=none,fill=none},
+]
+  \addplot[accent] coordinates {(0,16.967)(1,528.519)(2,10056.173)}; \addlegendentry{不相关}
+  \addplot[ember] coordinates {(0,3.882)(1,657.953)(2,10663.162)}; \addlegendentry{弱相关}
+  \addplot[ink] coordinates {(0,1.558)(1,739.220)(2,11416.532)}; \addlegendentry{强相关}
 \end{axis}
 \end{tikzpicture}
 \end{column}
-\begin{column}{0.52\textwidth}
-{\small\color{ink}\textbf{贪心 Gap 按模式}}\\[0.05cm]
+\begin{column}{0.49\textwidth}
+{\small\color{ink}\textbf{贪心 Gap 按模式}}\\[-0.03cm]
 \begin{tikzpicture}
 \begin{axis}[
-  narrowbar, height=3.0cm,
-  ylabel={Gap (\%)},
+  ybar, width=\columnwidth, height=3.25cm,
+  grid=major, bar width=4pt, enlarge x limits=0.18,
+  ylabel={Gap(\%)},
   symbolic x coords={不相关,弱相关,强相关},
   xtick=data,
-  x tick label style={font=\fontsize{4}{4.5}\selectfont},
+  legend style={font=\fontsize{4.3}{4.8}\selectfont,at={(0.5,-0.25)},anchor=north,legend columns=3,draw=none,fill=none},
+  x tick label style={font=\fontsize{4.3}{4.8}\selectfont},
 ]
-  \addplot[fill=accent!60,draw=accent] coordinates {(不相关,0.00)(弱相关,0.00)(强相关,0.85)};
-  \addlegendentry{S(50)}
-  \addplot[fill=accent!85,draw=accent] coordinates {(不相关,0.01)(弱相关,0.04)(强相关,0.12)};
-  \addlegendentry{M(500)}
-  \addplot[fill=accent,draw=accent]  coordinates {(不相关,0.00)(弱相关,0.00)(强相关,0.02)};
-  \addlegendentry{L(2000)}
+  \addplot[fill=accent!55,draw=accent] coordinates {(不相关,0.00)(弱相关,0.00)(强相关,0.85)}; \addlegendentry{S}
+  \addplot[fill=accent!80,draw=accent] coordinates {(不相关,0.01)(弱相关,0.04)(强相关,0.12)}; \addlegendentry{M}
+  \addplot[fill=accent,draw=accent] coordinates {(不相关,0.00)(弱相关,0.00)(强相关,0.02)}; \addlegendentry{L}
 \end{axis}
 \end{tikzpicture}
 \end{column}
 \end{columns}
 
-\vspace{-0.1cm}
-{\footnotesize\color{slate}\hi{强相关 S 级 gap 最高 0.85\%} — 性价比一致时贪心排序失效 · DP S→L 耗时 $\times$1000 · 回溯/分支限界 \tb}
+\vspace{0.18cm}
+{\footnotesize\color{slate}DP 从 S 到 L 耗时显著上升；贪心在 Pi 中整体接近最优，但强相关数据中排序区分度降低，gap 更容易出现。}
 
 \end{frame}
 
-% ====== Slide 10: JJ 结果 ======
-\begin{frame}{JJ 实验结果}
+% ====== Slide 13: JJ 结果 ======
+\begin{frame}{JJ：大规模实例下的现实选择}
 
-\vspace{-0.25cm}
+\vspace{-0.28cm}
 \begin{center}
-{\small\color{ink}\textbf{DP vs 贪心耗时（对数坐标）}}
+{\small\color{ink}\textbf{DP vs 贪心耗时（log 坐标，ms）}}
 \begin{tikzpicture}
 \begin{axis}[
-  barplot, height=4.0cm, width=0.88\textwidth,
+  ybar, width=0.94\textwidth, height=4.45cm,
   ymode=log, log basis y={10},
+  grid=major, bar width=6pt, enlarge x limits=0.11,
   ylabel={耗时(ms)},
-  symbolic x coords={n=400,f=0.1, n=400,f=0.3, n=1000,f=0.1, n=400,W=1亿},
+  symbolic x coords={400-0.1,400-0.2,400-0.3,1000-0.1,1000-0.2,1000-0.3},
   xtick=data,
-  enlarge x limits=0.15,
-  x tick label style={font=\fontsize{4}{4.5}\selectfont},
+  ymin=0.1,
+  legend style={font=\fontsize{5}{5.5}\selectfont,at={(0.5,-0.20)},anchor=north,legend columns=2,draw=none,fill=none},
+  x tick label style={font=\fontsize{4.8}{5.2}\selectfont},
 ]
-  \addplot[fill=ember!80,draw=ember] coordinates {
-    (n=400,f=0.1, 51.67)(n=400,f=0.3, 0.50)(n=1000,f=0.1, 1.65)(n=400,W=1亿, 0.53)
-  };
+  \addplot[fill=ember!80,draw=ember] coordinates {(400-0.1,27.783)(400-0.2,0.516)(400-0.3,0.990)(1000-0.1,2.051)(1000-0.2,1.860)(1000-0.3,0.959)};
   \addlegendentry{贪心}
-  \addplot[fill=accent!80,draw=accent] coordinates {
-    (n=400,f=0.1, 1128)(n=400,f=0.3, 756)(n=1000,f=0.1, 1826)(n=400,W=1亿, 113019)
-  };
+  \addplot[fill=accent!80,draw=accent] coordinates {(400-0.1,788.311)(400-0.2,750.138)(400-0.3,727.072)(1000-0.1,1556.003)(1000-0.2,1616.109)(1000-0.3,1632.430)};
   \addlegendentry{DP}
 \end{axis}
 \end{tikzpicture}
 \end{center}
 
-\vspace{-0.15cm}
+\vspace{0.02cm}
 \begin{itemize}
-  \item $W$=1亿：DP \hi{113s} vs 贪心 $<$1ms，\textbf{11 万倍差距}
-  \item $W$=100亿：DP \hi{OOM}（$\sim$40GB），贪心正常 · 回溯 $2^{400}$ → \hi{不可行}
+  \item DP 6 个 JJ 实例全部命中最优；$n=1000$ 时耗时约 \hi{1.6s}。
+  \item 贪心 gap 最大仅 \hi{0.04\%}，但仍不具备理论最优保证。
+  \item 回溯/分支限界面对 $n=400/1000$ 的指数搜索树，默认记录为 \hi{SKIP}。
 \end{itemize}
 
 \end{frame}
-
 % ====== Slide 11: 核心洞察 ======
 \begin{frame}{核心洞察：$n$ 与 $W$ 的博弈}
 
 \vspace{-0.15cm}
 \begin{center}
-\renewcommand{\arraystretch}{2.0}
+\renewcommand{\arraystretch}{1.8}
 \large
 \begin{tabular}{c|c|c|}
 \multicolumn{1}{c}{} & \multicolumn{1}{c}{\textbf{$n$ 小}} & \multicolumn{1}{c}{\textbf{$n$ 大}} \\
 \cline{2-3}
-\textbf{$W$ 小} & \color{slate}都轻松 & \blu{DP 统治} \\
+\textbf{$W$ 小} & \color{slate}四类算法均可比较 & \blu{DP/贪心更现实} \\
 \cline{2-3}
-\textbf{$W$ 大} & \hi{回溯/分支限界优} & \hi{贪心唯一可行} \\
+\textbf{$W$ 大} & \hi{搜索类可避开 $W$ 维度} & \hi{贪心最快，DP 受 $W$ 限制} \\
 \cline{2-3}
 \end{tabular}
 \end{center}
@@ -500,15 +638,15 @@ $W$=100亿：dp数组$\sim$40GB → \hi{OOM}
 \begin{columns}[T]
 \begin{column}{0.52\textwidth}
 {\footnotesize\color{slate}
-DP 的敌人是 \hi{$W$}：$W$ 翻 10 倍，耗时翻 10 倍。\\
-回溯的敌人是 \hi{$n$}：$n$ 增 1，搜索空间翻倍。\\
-贪心\blu{两者都不怕}——但以牺牲最优性为代价。
+DP 的敌人是 \hi{$W$}：容量越大，状态数组越大。\\
+回溯的敌人是 \hi{$n$}：每增加一个物品，理论搜索空间翻倍。\\
+贪心两者都不太怕，但以\hi{最优性不保证}为代价。
 }
 \end{column}
 \begin{column}{0.44\textwidth}
 \begin{center}
 \textcolor{ember}{\rule{2cm}{0.5pt}}\\[0.2cm]
-{\large\color{ink}\textbf{没有最优算法\\只有最优选择}}\\[0.2cm]
+{\large\color{ink}\textbf{没有万能算法\\只有合适选型}}\\[0.2cm]
 \textcolor{ember}{\rule{2cm}{0.5pt}}
 \end{center}
 \end{column}
@@ -527,18 +665,18 @@ DP 的敌人是 \hi{$W$}：$W$ 翻 10 倍，耗时翻 10 倍。\\
 \toprule
 \textbf{维度} & \textbf{贪心} & \textbf{DP} & \textbf{回溯} & \textbf{分支限界} \\
 \midrule
-时间复杂度 & $O(n\log n)$ & \hi{$O(nW)$} & \tb & \tb \\
-空间复杂度 & $O(n)$ & \hi{$O(W)$} & \tb & \tb \\
-保证最优？ & \hi{否} & 是 & \tb & \tb \\
-敏感于 & 数据分布 & $W$ & $n$ & \tb \\
-大容量可行？ & \blu{始终} & \hi{否($>10^8$)} & \tb & \tb \\
+时间复杂度 & $O(n\log n)$ & \hi{$O(nW)$} & $O(2^n)$ & $O(2^n)$ \\
+空间复杂度 & $O(n)$ & \hi{$O(W)$} & $O(n)$ & 最坏 $O(2^n)$ \\
+保证最优？ & \hi{否} & 是 & 是 & 是 \\
+敏感于 & 数据分布 & $W$ & $n$ & $n$ / 上界 \\
+大规模可行？ & \blu{强} & 取决于 $W$ & \hi{弱} & \hi{弱} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \vspace{0.15cm}
 \begin{center}
-{\large\color{ink}贪心：快但不准 \quad$\mid$\quad DP：准但怕大W \quad$\mid$\quad 搜索类：\tb}\\[0.2cm]
+{\large\color{ink}贪心：快但不准 \quad$\mid$\quad DP：准但怕大W \quad$\mid$\quad 搜索类：准但怕大n}\\[0.2cm]
 {\footnotesize\color{slate}四种算法构成连续谱系——从极速近似到精确最优，选型取决于 $n$、$W$ 和精度约束。}
 \end{center}
 
@@ -553,11 +691,11 @@ DP 的敌人是 \hi{$W$}：$W$ 翻 10 倍，耗时翻 10 倍。\\
 
   \item \hi{贪心} — 毫秒级 · 与 $W$ 无关 · gap 最高 15\% · \blu{实时场景首选}
 
-  \item \blu{DP} — 始终最优 · $O(nW)$ 伪多项式 · $W>10^8$ 不可用 · \blu{精度优先}
+  \item \blu{DP} — 始终最优 · $O(nW)$ 伪多项式 · 大容量下开销明显 · \blu{精度优先}
 
-  \item 回溯/分支限界 — $n$ 小 $W$ 大时优于 DP · 剪枝策略决定效率 \tb
+  \item 回溯/分支限界 — 小规模精确可行 · 大规模受 $2^n$ 限制 · FSU/Pi-S 全部最优
 
-  \item \textbf{选型公式} — 看 $n$、看 $W$、看精度需求 → \hi{三种瓶颈各不同}
+  \item \textbf{选型公式} — 看 $n$、看 $W$、看精度需求 → \hi{速度、空间、最优性三者取舍}
 \end{enumerate}
 
 \vspace{0.3cm}
